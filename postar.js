@@ -2,6 +2,7 @@
 * 
 * - postAr -
 * the beautifully simple post/paste tool
+* NOW WITH PERSISTENCE! ^_^
 * 
 */
 
@@ -9,6 +10,9 @@ var express = require('express');
 var _ = require('underscore');
 var moment = require('moment');
 var fs = require('fs');
+var persist = require('pst-obj');
+var storage = {key:'', value:'', sticky:false, time:0};
+//var storage = { key:"",value:"", };
 var stats = require('./stats').create();
 var postarPackage = require('./package.json');
 var config = {
@@ -55,7 +59,7 @@ app.use('/post', function(req, res, next) {
     });
 });
 
-var storage = {};
+//var storage = {};
 
 function cleanup() {
 	var values = _.values(storage);
@@ -73,6 +77,15 @@ function cleanup() {
 	}
 }
 
+persist.get('paste.json', storage, function(data, err) {
+	storage = data;
+	//values = _.values(storage);
+	keyx = _.keys(storage);
+	lenx = keyx.length - 4;
+	//console.log("Paste.json " + (err ? 'created' : 'fetched') + ', latest key: ' + val.length);
+	console.log("Paste.json " + (err ? 'created' : 'fetched') + ', latest key: ' + lenx + ' omg ');
+});
+
 /**
 * @param sticky must only be set to true for internal/admin posts
 *	sticky posts won't be garbage collected and cannot be overwritten
@@ -88,7 +101,8 @@ function store(key, val, sticky) {
 		}
 	}
 	storage[key] = {key:key, value:val, sticky:sticky, time:new Date().getTime()};
-	cleanup();
+	storage.persist();
+	//cleanup();
 	return true;
 }
 
@@ -113,7 +127,7 @@ app.get('/get/:id?', function(req, res) {
 		viewObject.value = obj.value;
 		stats.onGet();
 	}
-	viewObject.randomKey = _.sample("abcdefghijklmnopqrstuvwxyz0123456789_-".split(""),5).join("");
+	viewObject.randomKey = _.sample("abcdefghijklmnopqrstuvwxyz0123456789".split(""),5).join("");
 	addGlobalViewData(viewObject);
 	res.render('show', viewObject);
 });
